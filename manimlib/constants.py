@@ -1,52 +1,81 @@
 import numpy as np
 import os
 
-# Initialize directories
-env_MEDIA_DIR = os.getenv("MEDIA_DIR")
-if env_MEDIA_DIR:
-    MEDIA_DIR = env_MEDIA_DIR
-elif os.path.isfile("media_dir.txt"):
-    with open("media_dir.txt", 'rU') as media_file:
-        MEDIA_DIR = media_file.readline().strip()
-else:
-    MEDIA_DIR = os.path.join(
-        os.path.expanduser('~'),
-        "Dropbox (3Blue1Brown)/3Blue1Brown Team Folder"
-    )
-if not os.path.isdir(MEDIA_DIR):
-    MEDIA_DIR = "media"
-    print(
-        f"Media will be stored in {MEDIA_DIR + os.sep}. You can change "
-        "this behavior by writing a different directory to media_dir.txt."
-    )
-with open("media_dir.txt", 'w') as media_file:
-    media_file.write(MEDIA_DIR)
+MEDIA_DIR = ""
+VIDEO_DIR = ""
+VIDEO_OUTPUT_DIR = ""
+TEX_DIR = ""
+TEXT_DIR = ""
 
-VIDEO_DIR = os.path.join(MEDIA_DIR, "videos")
-RASTER_IMAGE_DIR = os.path.join(MEDIA_DIR, "designs", "raster_images")
-SVG_IMAGE_DIR = os.path.join(MEDIA_DIR, "designs", "svg_images")
-# TODO, staged scenes should really go into a subdirectory of a given scenes directory
-STAGED_SCENES_DIR = os.path.join(VIDEO_DIR, "staged_scenes")
-###
-THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-FILE_DIR = os.path.join(THIS_DIR, "files")
-TEX_DIR = os.path.join(FILE_DIR, "Tex")
-TEX_IMAGE_DIR = TEX_DIR  # TODO, What is this doing?
-# These two may be depricated now.
-MOBJECT_DIR = os.path.join(FILE_DIR, "mobjects")
-IMAGE_MOBJECT_DIR = os.path.join(MOBJECT_DIR, "image")
 
-for folder in [FILE_DIR, RASTER_IMAGE_DIR, SVG_IMAGE_DIR, VIDEO_DIR, TEX_DIR,
-               TEX_IMAGE_DIR, MOBJECT_DIR, IMAGE_MOBJECT_DIR,
-               STAGED_SCENES_DIR]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+def initialize_directories(config):
+    global MEDIA_DIR
+    global VIDEO_DIR
+    global VIDEO_OUTPUT_DIR
+    global TEX_DIR
+    global TEXT_DIR
+
+    video_path_specified = config["video_dir"] or config["video_output_dir"]
+
+    if not (video_path_specified and config["tex_dir"]):
+        if config["media_dir"]:
+            MEDIA_DIR = config["media_dir"]
+        else:
+            MEDIA_DIR = os.path.join(
+                os.path.expanduser('~'),
+                "Dropbox (3Blue1Brown)/3Blue1Brown Team Folder"
+            )
+        if not os.path.isdir(MEDIA_DIR):
+            MEDIA_DIR = "./media"
+        print(
+            f"Media will be written to {MEDIA_DIR + os.sep}. You can change "
+            "this behavior with the --media_dir flag."
+        )
+    else:
+        if config["media_dir"]:
+            print(
+                "Ignoring --media_dir, since both --tex_dir and a video "
+                "directory were both passed"
+            )
+
+    TEX_DIR = config["tex_dir"] or os.path.join(MEDIA_DIR, "Tex")
+    TEXT_DIR = os.path.join(MEDIA_DIR, "texts")
+    if not video_path_specified:
+        VIDEO_DIR = os.path.join(MEDIA_DIR, "videos")
+        VIDEO_OUTPUT_DIR = os.path.join(MEDIA_DIR, "videos")
+    elif config["video_output_dir"]:
+        VIDEO_OUTPUT_DIR = config["video_output_dir"]
+    else:
+        VIDEO_DIR = config["video_dir"]
+
+    for folder in [VIDEO_DIR, VIDEO_OUTPUT_DIR, TEX_DIR, TEXT_DIR]:
+        if folder != "" and not os.path.exists(folder):
+            os.makedirs(folder)
+
+NOT_SETTING_FONT_MSG='''
+Warning:
+You haven't set font.
+If you are not using English, this may cause text rendering problem.
+You set font like:
+text = Text('your text', font='your font')
+or:
+class MyText(Text):
+    CONFIG = {
+        'font': 'My Font'
+    }
+'''
+START_X = 30
+START_Y = 20
+NORMAL = 'NORMAL'
+ITALIC = 'ITALIC'
+OBLIQUE = 'OBLIQUE'
+BOLD = 'BOLD'
 
 TEX_USE_CTEX = False
 TEX_TEXT_TO_REPLACE = "YourTextHere"
 TEMPLATE_TEX_FILE = os.path.join(
-    THIS_DIR, "tex_template.tex" if not TEX_USE_CTEX
-    else "ctex_template.tex"
+    os.path.dirname(os.path.realpath(__file__)),
+    "tex_template.tex" if not TEX_USE_CTEX else "ctex_template.tex"
 )
 with open(TEMPLATE_TEX_FILE, "r") as infile:
     TEMPLATE_TEXT_FILE_BODY = infile.read()
@@ -73,7 +102,7 @@ HELP_MESSAGE = """
    -c specify a background color
 """
 SCENE_NOT_FOUND_MESSAGE = """
-   That scene is not in the script
+   {} is not in the script
 """
 CHOOSE_NUMBER_MESSAGE = """
 Choose number corresponding to desired scene/arguments.
@@ -85,33 +114,34 @@ NO_SCENE_MESSAGE = """
    There are no scenes inside that module
 """
 
-LOW_QUALITY_FRAME_DURATION = 1. / 15
-MEDIUM_QUALITY_FRAME_DURATION = 1. / 30
-PRODUCTION_QUALITY_FRAME_DURATION = 1. / 60
-
 # There might be other configuration than pixel shape later...
 PRODUCTION_QUALITY_CAMERA_CONFIG = {
     "pixel_height": 1440,
     "pixel_width": 2560,
+    "frame_rate": 60,
 }
 
 HIGH_QUALITY_CAMERA_CONFIG = {
     "pixel_height": 1080,
     "pixel_width": 1920,
+    "frame_rate": 60,
 }
 
 MEDIUM_QUALITY_CAMERA_CONFIG = {
     "pixel_height": 720,
     "pixel_width": 1280,
+    "frame_rate": 30,
 }
 
 LOW_QUALITY_CAMERA_CONFIG = {
     "pixel_height": 480,
     "pixel_width": 854,
+    "frame_rate": 15,
 }
 
 DEFAULT_PIXEL_HEIGHT = PRODUCTION_QUALITY_CAMERA_CONFIG["pixel_height"]
 DEFAULT_PIXEL_WIDTH = PRODUCTION_QUALITY_CAMERA_CONFIG["pixel_width"]
+DEFAULT_FRAME_RATE = 60
 
 DEFAULT_POINT_DENSITY_2D = 25
 DEFAULT_POINT_DENSITY_1D = 250
@@ -133,7 +163,6 @@ DEFAULT_MOBJECT_TO_MOBJECT_BUFFER = MED_SMALL_BUFF
 
 
 # All in seconds
-DEFAULT_ANIMATION_RUN_TIME = 1.0
 DEFAULT_POINTWISE_FUNCTION_RUN_TIME = 3.0
 DEFAULT_WAIT_TIME = 1.0
 
@@ -219,8 +248,11 @@ COLOR_MAP = {
     "GREY": "#888888",
     "DARK_GREY": "#444444",
     "DARK_GRAY": "#444444",
+    "DARKER_GREY": "#222222",
+    "DARKER_GRAY": "#222222",
     "GREY_BROWN": "#736357",
     "PINK": "#D147BD",
+    "LIGHT_PINK": "#DC75CD",
     "GREEN_SCREEN": "#00FF00",
     "ORANGE": "#FF862F",
 }

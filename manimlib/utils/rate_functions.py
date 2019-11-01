@@ -10,15 +10,18 @@ def linear(t):
 
 def smooth(t, inflection=10.0):
     error = sigmoid(-inflection / 2)
-    return (sigmoid(inflection * (t - 0.5)) - error) / (1 - 2 * error)
+    return np.clip(
+        (sigmoid(inflection * (t - 0.5)) - error) / (1 - 2 * error),
+        0, 1,
+    )
 
 
-def rush_into(t):
-    return 2 * smooth(t / 2.0)
+def rush_into(t, inflection=10.0):
+    return 2 * smooth(t / 2.0, inflection)
 
 
-def rush_from(t):
-    return 2 * smooth(t / 2.0 + 0.5) - 1
+def rush_from(t, inflection=10.0):
+    return 2 * smooth(t / 2.0 + 0.5, inflection) - 1
 
 
 def slow_into(t):

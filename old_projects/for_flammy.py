@@ -1,4 +1,4 @@
-from big_ol_pile_of_manim_imports import *
+from manimlib.imports import *
 from old_projects.sphere_area import *
 
 
@@ -216,10 +216,10 @@ class SphereRings(SecondProof):
     def flash_through_rings(self):
         rings = self.north_rings.copy()
         rings.fade(1)
-        rings.sort_submobjects(lambda p: p[2])
+        rings.sort(lambda p: p[2])
 
         for x in range(8):
-            self.play(LaggedStart(
+            self.play(LaggedStartMap(
                 ApplyMethod, rings,
                 lambda m: (m.set_fill, PINK, 0.5),
                 rate_func=there_and_back,
@@ -310,13 +310,13 @@ class IntegralSymbols(Scene):
 
         self.play(FadeInFrom(rhs, 4 * LEFT))
         self.wait()
-        self.play(CircleThenFadeAround(rhs[1]))
+        self.play(ShowCreationThenFadeAround(rhs[1]))
         self.wait()
-        self.play(CircleThenFadeAround(rhs[2:]))
+        self.play(ShowCreationThenFadeAround(rhs[2:]))
         self.wait()
         self.play(
             GrowFromCenter(int_brace),
-            LaggedStart(
+            LaggedStartMap(
                 FadeInFrom, q_marks,
                 lambda m: (m, UP),
             )
